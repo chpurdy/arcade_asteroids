@@ -12,7 +12,7 @@ class Ship:
         self.dy = 0
         self.heading = heading # degrees
         self.rotation = 0
-        self.laser = Laser(self.x, self.y,self.heading)
+        self.lasers = []
         
     def draw(self):
         top = arcade.Point(self.x,self.y+10)
@@ -26,7 +26,8 @@ class Ship:
                                      right[0],right[1],
                                      left[0],left[1],
                                      arcade.color.WHITE)
-        self.laser.draw()
+        for laser in self.lasers:
+            laser.draw()
         
     def update(self):
         self.x += self.dx
@@ -40,7 +41,11 @@ class Ship:
             self.x = 0
         if self.y > SCREEN_HEIGHT:
             self.y = 0
-        self.laser.update()
+        for laser in self.lasers:
+            if laser.on_screen():
+                laser.update()
+            else:
+                self.lasers.remove(laser)
     
     def rotate(self,direction):
         if direction == 'LEFT':
@@ -58,38 +63,26 @@ class Ship:
             self.dy += math.sin(rad)
     
     def shoot(self):
-        self.laser.shoot(self.x, self.y, self.heading)
+        self.lasers.append(Laser(self.x, self.y, self.heading))
         
 
 class Laser:
     def __init__(self, x, y, heading):
         self.x = x
         self.y = y
-        self.heading = math.radians(heading-90)
+        self.heading = math.radians(heading+90)
         self.length = 10
         self.color = arcade.color.WHITE
         self.speed = 10
-        self.shooting = False
-    
-    def shoot(self,x,y,heading):
-        if not self.shooting:
-            self.x = x
-            self.y = y
-            self.heading = math.radians(heading+90)
-            self.shooting = True
         
+         
     
     def draw(self):
-        if self.shooting:
-            
-            arcade.draw_line(self.x, self.y, self.x+self.length*math.cos(self.heading), self.y+self.length*math.sin(self.heading),self.color)
+        arcade.draw_line(self.x, self.y, self.x+self.length*math.cos(self.heading), self.y+self.length*math.sin(self.heading),self.color)
     
     def update(self):
-        if self.shooting:
-            self.x += self.speed * math.cos(self.heading)
-            self.y += self.speed * math.sin(self.heading)
-            if not self.on_screen():
-                self.shooting = False
+        self.x += self.speed * math.cos(self.heading)
+        self.y += self.speed * math.sin(self.heading)
         
     def on_screen(self):
         return self.x > 0 and self.x < SCREEN_WIDTH and self.y > 0 and self.y < SCREEN_HEIGHT  
