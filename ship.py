@@ -1,13 +1,16 @@
-from constants import SCREEN_WIDTH, SCREEN_HEIGHT
+from constants import SCREEN_WIDTH, SCREEN_HEIGHT, distance
 import arcade
 import math
 
+
 class Ship:
-    def __init__(self, x, y, heading):
+    def __init__(self, x, y, heading,border_color=arcade.color.WHITE,inner_color=arcade.color.BLACK):
         self.x = x
         self.y = y
         self.dx = 0
         self.dy = 0
+        self.border_color = border_color
+        self.inner_color = inner_color
         self.heading = heading # degrees
         self.rotation = 0
         self.lasers = []
@@ -20,10 +23,16 @@ class Ship:
         top = arcade.rotate_point(top[0],top[1],self.x,self.y,self.heading)
         right = arcade.rotate_point(right[0],right[1],self.x,self.y,self.heading)
         left = arcade.rotate_point(left[0],left[1],self.x,self.y,self.heading)
+        
+        arcade.draw_triangle_filled(top[0],top[1],
+                                     right[0],right[1],
+                                     left[0],left[1],
+                                     self.inner_color)
+        
         arcade.draw_triangle_outline(top[0],top[1],
                                      right[0],right[1],
                                      left[0],left[1],
-                                     arcade.color.WHITE)
+                                     self.border_color)
         for laser in self.lasers:
             laser.draw()
         
@@ -44,6 +53,39 @@ class Ship:
                 laser.update()
             else:
                 self.lasers.remove(laser)
+        
+    def reset(self):
+        self.x = SCREEN_WIDTH/2
+        self.y = SCREEN_HEIGHT/2
+    
+    def check_hit(self, asteroids):
+        count = 0
+        new = []
+        to_remove = []
+        remove_laser = []
+        for laser in self.lasers:
+            for asteroid in asteroids:
+                if laser.hit(asteroid):
+                    remove_laser.append(laser)
+                    to_remove.append(asteroid)
+                    count += 100//asteroid.r
+                    if asteroid.r > 10:
+                        s = asteroid.split()
+                        new += s
+                    break
+        
+        for l in remove_laser:
+            self.lasers.remove(l)
+        for a in to_remove:
+            asteroids.remove(a)
+        asteroids += new
+        return count
+    
+    def check_collide(self, asteroid):
+        if distance(self.x, self.y, asteroid.x,asteroid.y) < asteroid.r:
+            return True
+        else:
+            return False
     
     def rotate(self,direction):
         if direction == 'LEFT':
@@ -72,7 +114,13 @@ class Laser:
         self.color = arcade.color.WHITE
         self.speed = 10
         
-         
+    def hit(self, asteroid):
+        if distance(self.x, self.y, asteroid.x, asteroid.y) < asteroid.r:
+            return True
+        else:
+            return False
+            
+        
     
     def draw(self):
         arcade.draw_line(self.x, self.y, self.x+self.length*math.cos(self.heading), self.y+self.length*math.sin(self.heading),self.color)
